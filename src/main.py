@@ -16,6 +16,24 @@ try:
     background = pygame.transform.scale(background, (WIDTH, HEIGHT))
 except:
     background = None
+
+try:
+    snake_head_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_head.png"))
+    snake_head_img = pygame.transform.scale(snake_head_img, (30, 30))
+except:
+    snake_head_img = None
+
+try:
+    snake_body_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_body.png"))
+    snake_body_img = pygame.transform.scale(snake_body_img, (30, 30))
+except:
+    snake_body_img = None
+
+try:
+    apple_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "appl.png"))
+    apple_img = pygame.transform.scale(apple_img, (25, 25))
+except:
+    apple_img = None
 pygame.display.set_caption('Snake Game')
 clock = pygame.time.Clock()
 
@@ -41,16 +59,16 @@ game_state = "menu"
 
 # Snake
 snake = [(400,300)]
-dx = 20
+dx = 30
 dy = 0
 
-snake_size = 20
+snake_size = 30
 base_speed = 5
 speed = base_speed
 snake_length = 1
 
 #Food
-food_size = 20
+food_size = 25
 food_x = random.randint(0, WIDTH - food_size)
 food_y = random.randint(0, HEIGHT - food_size)
 
@@ -76,7 +94,7 @@ while runing:
                 paused = not paused
             if event.key == pygame.K_r and game_state == "game_over":
                 snake = [(400, 300)]
-                dx, dy = 20, 0
+                dx, dy = 30, 0
                 snake_length = 1
                 score = 0
                 speed = base_speed
@@ -86,7 +104,7 @@ while runing:
                 if game_state == "menu":
                     # Reset game on start
                     snake = [(400, 300)]
-                    dx, dy = 20, 0
+                    dx, dy = 30, 0
                     snake_length = 1
                     score = 0
                     speed = base_speed
@@ -116,16 +134,16 @@ while runing:
         if game_state == "playing" and not paused:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
-                dx=-20
+                dx=-30
                 dy=0
             elif keys[pygame.K_RIGHT]:
-                dx=20
+                dx=30
                 dy=0
             elif keys[pygame.K_UP]:
-                dy=-20
+                dy=-30
                 dx=0
             elif keys[pygame.K_DOWN]:
-                dy=20
+                dy=30
                 dx=0
 
             head_x, head_y = snake[0]
@@ -154,17 +172,38 @@ while runing:
         # draw
         for i, segment in enumerate(snake):
             if i == 0:
-                color = (0, 255, 0)  # Head
+                if snake_head_img:
+                    if dx == 30:
+                        angle = 0 # Assuming head faces right by default
+                    elif dx == -30:
+                        angle = 180
+                    elif dy == -30:
+                        angle = 90
+                    elif dy == 30:
+                        angle = -90
+                    else:
+                        angle = 0
+                    
+                    head_rotated = pygame.transform.rotate(snake_head_img, angle)
+                    screen.blit(head_rotated, (segment[0], segment[1]))
+                else:
+                    pygame.draw.rect(screen, (0, 255, 0), (segment[0], segment[1], snake_size, snake_size))
             else:
-                color = (0, 180, 0)  # Body
-            pygame.draw.rect(
-                screen,
-                color,
-                (segment[0], segment[1], 20, 20)
-            )
+                if snake_body_img:
+                    prev_segment = snake[i-1]
+                    if segment[0] == prev_segment[0]: # Same X means moving vertically
+                        body_rotated = pygame.transform.rotate(snake_body_img, 90)
+                    else: # Moving horizontally
+                        body_rotated = snake_body_img
+                    screen.blit(body_rotated, (segment[0], segment[1]))
+                else:
+                    pygame.draw.rect(screen, (0, 180, 0), (segment[0], segment[1], snake_size, snake_size))
 
-        food_rect = pygame.Rect(food_x, food_y,food_size, food_size)
-        pygame.draw.rect(screen, (255,0,0), food_rect)
+        food_rect = pygame.Rect(food_x, food_y, food_size, food_size)
+        if apple_img:
+            screen.blit(apple_img, (food_x, food_y))
+        else:
+            pygame.draw.rect(screen, (255,0,0), food_rect)
 
         score_txt = font.render("Score : " +str(score),True,(255,255,255))
         screen.blit(score_txt,(10,10))
