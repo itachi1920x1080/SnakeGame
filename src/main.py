@@ -1,6 +1,9 @@
 import pygame
 import sys
 import random
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 pygame.init()
 WIDTH = 800 #Width of the screen
@@ -9,7 +12,7 @@ HEIGHT = 600 #Height of the screen
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 
 try:
-    background = pygame.image.load("assets/images/background.png")
+    background = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "background.png"))
     background = pygame.transform.scale(background, (WIDTH, HEIGHT))
 except:
     background = None
@@ -18,17 +21,17 @@ clock = pygame.time.Clock()
 
 def load_high_score():
     try:
-        with open("score.txt", "r") as f:
+        with open(os.path.join(BASE_DIR, "score.txt"), "r") as f:
             return int(f.read())
     except:
         return 0
 
 def save_high_score(score):
-    with open("score.txt", "w") as f:
+    with open(os.path.join(BASE_DIR, "score.txt"), "w") as f:
         f.write(str(score))
 
 try:
-    eat_sound = pygame.mixer.Sound("assets/sounds/eat.wav")
+    eat_sound = pygame.mixer.Sound(os.path.join(BASE_DIR, "assets", "sounds", "eat.wav"))
 except:
     eat_sound = None
 
