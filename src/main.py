@@ -23,7 +23,7 @@ def save_high_score(score):
         f.write(str(score))
 
 try:
-    eat_sound = pygame.mixer.Sound("assets/eat.wav")
+    eat_sound = pygame.mixer.Sound("assets/sounds/eat.wav")
 except:
     eat_sound = None
 
