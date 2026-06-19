@@ -17,23 +17,50 @@ try:
 except:
     background = None
 
+def scale_image(img, target_width=None, target_height=None):
+    if not img: return None
+    w, h = img.get_size()
+    if target_width and not target_height:
+        target_height = int(h * (target_width / w))
+    elif target_height and not target_width:
+        target_width = int(w * (target_height / h))
+    return pygame.transform.smoothscale(img, (target_width, target_height))
+
 try:
-    snake_head_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_head.png"))
-    snake_head_img = pygame.transform.scale(snake_head_img, (30, 30))
+    snake_head_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_head.png")).convert_alpha()
+    snake_head_img = scale_image(snake_head_img, target_width=35)
 except:
     snake_head_img = None
 
 try:
-    snake_body_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_body.png"))
-    snake_body_img = pygame.transform.scale(snake_body_img, (30, 30))
+    snake_body_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_body.png")).convert_alpha()
+    snake_body_img = scale_image(snake_body_img, target_width=30)
 except:
     snake_body_img = None
 
 try:
-    apple_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "appl.png"))
-    apple_img = pygame.transform.scale(apple_img, (25, 25))
+    snake_tail_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_tail.png")).convert_alpha()
+    snake_tail_img = scale_image(snake_tail_img, target_width=30)
+except:
+    snake_tail_img = None
+
+try:
+    apple_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "apple.png")).convert_alpha()
+    apple_img = scale_image(apple_img, target_width=30)
 except:
     apple_img = None
+
+try:
+    snake_turn_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "snake_turn.png")).convert_alpha()
+    snake_turn_img = scale_image(snake_turn_img, target_width=30)
+except:
+    snake_turn_img = None
+
+try:
+    menu_logo_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "images", "menu_logo.png")).convert_alpha()
+    menu_logo_img = scale_image(menu_logo_img, target_width=400)
+except:
+    menu_logo_img = None
 pygame.display.set_caption('Snake Game')
 clock = pygame.time.Clock()
 
@@ -122,11 +149,16 @@ while runing:
         screen.fill((0,0,0))
 
     if game_state == "menu":
-        title = go_font.render("SNAKE GAME", True, (0, 255, 0))
+        if menu_logo_img:
+            rect = menu_logo_img.get_rect(center=(WIDTH//2, 150))
+            screen.blit(menu_logo_img, rect.topleft)
+        else:
+            title = go_font.render("SNAKE GAME", True, (0, 255, 0))
+            screen.blit(title, (250, 180))
+
         start = font.render("ENTER - Start", True, (255, 255, 255))
         exit_text = font.render("ESC - Exit", True, (255, 255, 255))
 
-        screen.blit(title, (250, 180))
         screen.blit(start, (290, 250))
         screen.blit(exit_text, (300, 300))
 
@@ -173,35 +205,79 @@ while runing:
         for i, segment in enumerate(snake):
             if i == 0:
                 if snake_head_img:
-                    if dx == 30:
-                        angle = 0 # Assuming head faces right by default
-                    elif dx == -30:
-                        angle = 180
-                    elif dy == -30:
-                        angle = 90
-                    elif dy == 30:
-                        angle = -90
-                    else:
-                        angle = 0
+                    if dx == 30: angle = 0
+                    elif dx == -30: angle = 180
+                    elif dy == -30: angle = 90
+                    elif dy == 30: angle = -90
+                    else: angle = 0
                     
                     head_rotated = pygame.transform.rotate(snake_head_img, angle)
-                    screen.blit(head_rotated, (segment[0], segment[1]))
+                    rect = head_rotated.get_rect(center=(segment[0] + snake_size//2, segment[1] + snake_size//2))
+                    screen.blit(head_rotated, rect.topleft)
                 else:
                     pygame.draw.rect(screen, (0, 255, 0), (segment[0], segment[1], snake_size, snake_size))
+            elif i == len(snake) - 1 and snake_tail_img and len(snake) > 1:
+                prev_segment = snake[i-1]
+                diff_x = prev_segment[0] - segment[0]
+                diff_y = prev_segment[1] - segment[1]
+                if diff_x > 0: angle = 0
+                elif diff_x < 0: angle = 180
+                elif diff_y < 0: angle = 90
+                elif diff_y > 0: angle = -90
+                else: angle = 0
+                
+                tail_rotated = pygame.transform.rotate(snake_tail_img, angle)
+                rect = tail_rotated.get_rect(center=(segment[0] + snake_size//2, segment[1] + snake_size//2))
+                screen.blit(tail_rotated, rect.topleft)
             else:
                 if snake_body_img:
                     prev_segment = snake[i-1]
-                    if segment[0] == prev_segment[0]: # Same X means moving vertically
-                        body_rotated = pygame.transform.rotate(snake_body_img, 90)
-                    else: # Moving horizontally
-                        body_rotated = snake_body_img
-                    screen.blit(body_rotated, (segment[0], segment[1]))
+                    next_segment = snake[i+1]
+                    
+                    diff_x_prev = prev_segment[0] - segment[0]
+                    diff_y_prev = prev_segment[1] - segment[1]
+                    diff_x_next = next_segment[0] - segment[0]
+                    diff_y_next = next_segment[1] - segment[1]
+                    
+                    if diff_x_prev == -diff_x_next and diff_y_prev == -diff_y_next:
+                        # Moving straight
+                        if diff_x_prev != 0: # Moving horizontally
+                            body_rotated = snake_body_img
+                        else: # Moving vertically
+                            body_rotated = pygame.transform.rotate(snake_body_img, 90)
+                        rect = body_rotated.get_rect(center=(segment[0] + snake_size//2, segment[1] + snake_size//2))
+                        screen.blit(body_rotated, rect.topleft)
+                    else:
+                        # It's a turn
+                        if 'snake_turn_img' in globals() and snake_turn_img:
+                            if (diff_x_prev == 30 and diff_y_next == 30) or (diff_x_next == 30 and diff_y_prev == 30):
+                                angle = 180  # Right and Down
+                            elif (diff_x_prev == -30 and diff_y_next == 30) or (diff_x_next == -30 and diff_y_prev == 30):
+                                angle = 90 # Left and Down
+                            elif (diff_x_prev == -30 and diff_y_next == -30) or (diff_x_next == -30 and diff_y_prev == -30):
+                                angle = 0 # Left and Up
+                            elif (diff_x_prev == 30 and diff_y_next == -30) or (diff_x_next == 30 and diff_y_prev == -30):
+                                angle = -90  # Right and Up
+                            else:
+                                angle = 0
+                                
+                            body_rotated = pygame.transform.rotate(snake_turn_img, angle)
+                        else:
+                            # fallback to straight body
+                            if diff_x_prev != 0:
+                                body_rotated = snake_body_img
+                            else:
+                                body_rotated = pygame.transform.rotate(snake_body_img, 90)
+                        
+                        rect = body_rotated.get_rect(center=(segment[0] + snake_size//2, segment[1] + snake_size//2))
+                        screen.blit(body_rotated, rect.topleft)
                 else:
                     pygame.draw.rect(screen, (0, 180, 0), (segment[0], segment[1], snake_size, snake_size))
 
         food_rect = pygame.Rect(food_x, food_y, food_size, food_size)
         if apple_img:
-            screen.blit(apple_img, (food_x, food_y))
+            rect = apple_img.get_rect(center=(food_x + food_size//2, food_y + food_size//2))
+            screen.blit(apple_img, rect.topleft)
         else:
             pygame.draw.rect(screen, (255,0,0), food_rect)
 
